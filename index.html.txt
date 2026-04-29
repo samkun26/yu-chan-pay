@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>優ちゃんのお金管理アプリ</title>
+    <style>
+        :root { --yu-pink: #ffc0cb; --yu-heart: #ff1493; --yu-gold: #ffd700; }
+        body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background-color: #fff5f7; text-align: center; margin: 0; padding: 20px; color: #444; overflow-x: hidden; }
+        .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 30px; box-shadow: 0 10px 30px rgba(255,182,193,0.4); border: 3px solid var(--yu-pink); }
+        h1 { color: var(--yu-heart); font-size: 1.4rem; margin-bottom: 5px; }
+        .yu-photo-container { position: relative; width: 180px; height: 180px; margin: 0 auto 15px; cursor: pointer; }
+        .yu-photo { width: 100%; height: 100%; border-radius: 50%; border: 6px double var(--yu-heart); object-fit: cover; background-color: #eee; }
+        .heart-icon { position: absolute; bottom: 10px; right: 10px; font-size: 2rem; animation: heartbeat 1.5s infinite; }
+        @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        .yu-comment { background: #fff; border: 2px solid var(--yu-pink); padding: 15px; border-radius: 15px; min-height: 60px; margin-bottom: 20px; font-weight: bold; color: #d02090; display: flex; align-items: center; justify-content: center; line-height: 1.4; }
+        .input-card { background: #fffafa; padding: 15px; border-radius: 15px; border: 1px solid #ffe4e1; margin-bottom: 20px; }
+        label { display: block; font-size: 0.85rem; margin-bottom: 8px; color: #888; font-weight: bold; }
+        input, select { width: 100%; padding: 12px; border: 2px solid var(--yu-pink); border-radius: 12px; box-sizing: border-box; font-size: 1rem; outline: none; margin-bottom: 10px; }
+        .btn-submit { background: linear-gradient(45deg, #ff69b4, #ff1493); color: white; border: none; padding: 15px; width: 100%; border-radius: 50px; font-size: 1.1rem; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(255,20,147,0.3); }
+        .btn-settle { background: linear-gradient(45deg, #4caf50, #2e7d32); color: white; border: none; padding: 10px; width: 100%; border-radius: 50px; font-size: 0.9rem; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        .summary-box { background: linear-gradient(135deg, #fff0f5, #ffe4e1); padding: 20px; border-radius: 20px; margin-top: 25px; border: 2px dashed var(--yu-heart); }
+        .summary-amount { font-size: 1.8rem; font-weight: bold; color: #ff1493; }
+        .history-item { background: white; border-radius: 10px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--yu-pink); box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left; }
+        .paid-badge { background: #e0e0e0; color: #999; padding: 4px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
+        .unpaid-badge { background: #ff4081; color: white; padding: 4px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
+        #bgm-status { font-size: 0.6rem; color: #ff69b4; margin-top: 5px; cursor: pointer; }
+    </style>
+</head>
+<body onclick="startBGM()">
+
+<div class="container">
+    <h1>💖 優ちゃんのお金管理アプリ 💖</h1>
+    
+    <div class="yu-photo-container">
+        <img src="images/yu (1).jpg" alt="優ちゃん" class="yu-photo" id="yuImage">
+        <div class="heart-icon">💕</div>
+    </div>
+    
+    <div class="yu-comment" id="yuSpeech">「ねえ、今日は優ちゃんに何を捧げてくれるの？」</div>
+
+    <div class="input-card">
+        <label>支払った金額</label>
+        <input type="number" id="amount" placeholder="金額を入力してね">
+        
+        <label>支払った人</label>
+        <select id="payer">
+            <option value="yu">優ちゃん</option>
+            <option value="other">優ちゃん以外の人</option>
+        </select>
+        
+        <button class="btn-submit" onclick="addRecord()">金額を記録する</button>
+    </div>
+
+    <div class="summary-box">
+        <div id="summaryLabel" style="font-size: 0.9rem; color: #ff69b4; margin-bottom: 10px;">現在の清算状況</div>
+        <div class="summary-amount" id="summaryAmount">0円</div>
+        <button class="btn-settle" id="btnSettleAll" onclick="settleAll()" style="display:none;">まとめて清算 🤝</button>
+        <div style="font-size: 0.6rem; color: #ff69b4; margin-top: 10px;">※優ちゃんの笑顔はプライスレスです</div>
+    </div>
+
+    <div id="historyList" style="margin-top: 30px;">
+        <h3 style="font-size:1rem; color:var(--yu-heart);">足跡（履歴）</h3>
+    </div>
+    
+    <div id="bgm-status">🎵 画面をタップしてBGM再生</div>
+    <audio id="bgMusic" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
+
+    <button style="margin-top:40px; font-size: 0.7rem; background:none; border:none; color:#ccc; text-decoration: underline; cursor: pointer;" onclick="clearAll()">新しい思い出のページをめくる（全リセット）</button>
+</div>
+
+<script>
+    // --- BGM再生機能 ---
+    let isPlaying = false;
+    function startBGM() {
+        const audio = document.getElementById('bgMusic');
+        if (!isPlaying) {
+            audio.play().catch(() => { /* 自動再生制限用 */ });
+            isPlaying = true;
+            document.getElementById('bgm-status').innerText = "🎵 BGM Playing";
+        }
+    }
+
+    // --- 画像設定 (Windows一括リネーム形式) ---
+    const yuImages = [];
+    for (let i = 1; i <= 30; i++) {
+        yuImages.push(`images/yu (${i}).jpg`);
+    }
+
+    // --- セリフ50パターン ---
+    const yuQuotes = [
+        "たくさん使いましたねえ。優ちゃんのために？", "もうちょっと節約したらどうですか？", "優ちゃん、これ欲しかったんだ！最高！", "えっ、これだけ？優ちゃんへの愛はその程度？", "さすが優ちゃんの選んだ人、かっこいい！",
+        "お金は天下の回りもの、優ちゃんの元に集まるもの。", "次のデートはもっと豪華でもいいんだよ？", "優ちゃんへの投資は、将来の幸せへの投資だよ！", "ちょっと使いすぎじゃない？優ちゃんが管理しようか？", "ふーん、これにそんなに払ったんだ…。",
+        "優ちゃんとの思い出が増えるなら安いもんでしょ？", "今の決済、優ちゃんへの愛が100点満点だったよ！", "優ちゃんに貢げるなんて、幸せ者だね！", "美味しいもの食べて、優ちゃんもご機嫌です♪", "次はお高いスイーツが食べたいな〜？",
+        "ねえ、優ちゃんのこと甘やかしすぎじゃない？…好きだけど。", "しっかり働いて、また優ちゃんを遊びに連れてって！", "優ちゃんのために使うお金って、魔法みたいに消えるね。", "今の金額、優ちゃんの可愛さに比べたら誤差だよね。", "お財布、大丈夫？優ちゃんがぎゅーってしてあげようか？",
+        "優ちゃん銀行へのご入金、ありがとうございます！", "この記録、一生忘れないからね", "そんなに優ちゃんのこと喜ばせたいんだ？ニヤニヤしちゃう。", "優ちゃんとの時間はプライスレス。でも支払いは現実！", "明日からはもやし生活かな？優ちゃんはステーキがいいな！",
+        "優ちゃんの笑顔、一回につき100万円だけど、今日は特別にタダだよ？", "こんなに使って…優ちゃんのこと、本当に好きなんだね。", "経済回してるね〜！優ちゃんも鼻が高いよ！", "その調子でどんどん優ちゃんを幸せにしてね！", "今日の優ちゃん、いつもより3割増しで可愛かったでしょ？",
+        "優ちゃんにお金を使える権利をあげます！感謝してね？", "お金持ちになっても、優ちゃんのことだけ見ててね。", "これ、優ちゃんへのプレゼントってことでいい？", "優ちゃんのために頑張る姿、一番カッコいいと思うよ。", "使いすぎ注意！でも優ちゃんへのプレゼントは別腹だよ！",
+        "ねえねえ、次のお休みはどこに連れてってくれるの？", "優ちゃん、もっと贅沢させてもらってもいいんだよ？", "記録完了！あなたの想いをしっかり受け取ったよ。", "優ちゃん専用ATMだね！", "こんなに優ちゃんに尽くしてくれるなんて、前世で徳を積んだね？",
+        "支払うたびに優ちゃんの好感度が上がってる気がする！", "優ちゃんのわがまま、これからも聞いてくれる？", "今日も一日、優ちゃんの隣にいてくれてありがとう。", "お買い物楽しかった！優ちゃん、大満足です！", "さて、次は何をシェアしましょうか？",
+        "お金じゃ買えない価値が優ちゃんにはあるんだよ？わかってる？", "優ちゃんへの想い、本日も絶好調だね！", "この金額分、あとで優ちゃんがいっぱい褒めてあげる。", "貯金も大事だけど、今の優ちゃんとの時間も大事だよね！", "優ちゃんのために使うお金は、きっと幸運を呼ぶよ！"
+    ];
+
+    let records = JSON.parse(localStorage.getItem('yuRecords')) || [];
+
+    function updateView() {
+        const historyList = document.getElementById('historyList');
+        const summaryAmount = document.getElementById('summaryAmount');
+        const summaryLabel = document.getElementById('summaryLabel');
+        const btnSettleAll = document.getElementById('btnSettleAll');
+        
+        historyList.innerHTML = '<h3 style="font-size:1rem; color:var(--yu-heart);">足跡（履歴）</h3>';
+        let totalYuPaid = 0, totalOtherPaid = 0, unpaidCount = 0;
+
+        // 新しい順に表示
+        records.slice().reverse().forEach((rec, originalIndex) => {
+            const index = records.length - 1 - originalIndex;
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            const payerName = rec.payer === 'yu' ? '優ちゃん' : 'あなた';
+            
+            item.innerHTML = `
+                <div>
+                    <strong style="color:${rec.payer === 'yu' ? '#ff69b4' : '#333'}">${rec.amount.toLocaleString()}円</strong> 
+                    <span style="font-size:0.7rem; color:#666;">by ${payerName}</span><br>
+                    <small style="color:#999;">${rec.date}</small>
+                </div>
+                ${rec.paid ? '<div class="paid-badge">完了</div>' : `<div class="unpaid-badge" onclick="togglePaid(${index})">清算</div>`}
+            `;
+            historyList.appendChild(item);
+
+            if (!rec.paid) {
+                unpaidCount++;
+                if (rec.payer === 'yu') totalYuPaid += Number(rec.amount);
+                else totalOtherPaid += Number(rec.amount);
+            }
+        });
+
+        // 差額計算
+        const diff = (totalYuPaid - totalOtherPaid) / 2;
+        if (diff > 0) {
+            summaryLabel.innerText = "あなたが優ちゃんに支払う額";
+            summaryAmount.innerText = `${Math.abs(diff).toLocaleString()}円`;
+        } else if (diff < 0) {
+            summaryLabel.innerText = "優ちゃんからの「ありがとう」の重み";
+            summaryAmount.innerText = `${Math.abs(diff).toLocaleString()}円分`;
+        } else {
+            summaryLabel.innerText = "清算の必要はありません";
+            summaryAmount.innerText = "0円";
+        }
+
+        // 未清算があるときだけ「まとめて清算」ボタンを表示
+        btnSettleAll.style.display = unpaidCount > 0 ? 'block' : 'none';
+        localStorage.setItem('yuRecords', JSON.stringify(records));
+    }
+
+    function addRecord() {
+        const amountEl = document.getElementById('amount');
+        const payerEl = document.getElementById('payer');
+        if (!amountEl.value || amountEl.value <= 0) return;
+
+        records.push({
+            amount: parseInt(amountEl.value),
+            payer: payerEl.value,
+            date: new Date().toLocaleString('ja-JP', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}),
+            paid: false
+        });
+        amountEl.value = '';
+        
+        // セリフと写真をランダムに変更
+        document.getElementById('yuSpeech').innerText = `「${yuQuotes[Math.floor(Math.random() * yuQuotes.length)]}」`;
+        document.getElementById('yuImage').src = yuImages[Math.floor(Math.random() * yuImages.length)];
+        
+        updateView();
+    }
+
+    function togglePaid(index) {
+        records[index].paid = true;
+        updateView();
+    }
+
+    function settleAll() {
+        if(confirm('未清算の項目をすべて清算済みにしますか？')) {
+            records.forEach(rec => rec.paid = true);
+            updateView();
+            document.getElementById('yuSpeech').innerText = "「清算完了！次も楽しみだね？」";
+        }
+    }
+
+    function clearAll() {
+        if(confirm('全ての記録をリセットして、新しいページをめくりますか？')) {
+            records = [];
+            updateView();
+            document.getElementById('yuSpeech').innerText = "「また新しい思い出、作ろうね？」";
+        }
+    }
+
+    // 起動時の表示
+    updateView();
+</script>
+
+</body>
+</html>
